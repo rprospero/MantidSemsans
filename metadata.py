@@ -3,6 +3,7 @@ import re
 import datetime
 import json
 import os.path
+import xml.etree
 from .runtypes import HeData, RunData
 
 def numbered_run(x):
@@ -115,4 +116,65 @@ def load_runs(infile, outfile):
         json.dump(d, outfile)
 
 
-#load_runs("runs.tsv", "rundict2.dat")
+# load_runs("runs.tsv", "rundict2.dat")
+
+
+JPATH = r'\\isis\inst$\NDXLARMOR\Instrument\logs\journal'
+
+
+def get_relevant_log(run):
+    with open(JPATH+"\journal_main.xml", "r") as infile:
+        journals = xml.etree.ElementTree.parse(infile)
+    for child in journals.getroot():
+        if int(child.attrib["first_run"]) <= run <= int(child.attrib["last_run"]):
+            return child.attrib["name"]
+
+def get_xml_run_number(node):
+    for child in node:
+        if "run_number" in child.tag:
+            return int(child.text)
+
+
+def get_log(runs):
+    hetemp = load_helium_file(
+        os.path.join(
+            r"C:\Users\auv61894\Dropbox\Science\Edler\Edler_May_2017",
+            "heruns.tsv"))
+
+    log_file = JPATH + "\\" + get_relevant_log(min(runs))
+    results = []
+    with open(log_file, "r") as infile:
+        journal = xml.etree.cElementTree.iterparse(infile)
+        for event, child in journal:
+            if "NXentry" in child.tag:
+                num = get_xml_run_number(child)
+                if num in runs:
+                    for param in child:
+                        if "title" in param.tag:
+                            sample = param.text
+                        elif "start_time" in param.tag:
+                            start = datetime.datetime.strptime(
+                                param.text,
+                                "%Y-%m-%dT%H:%M:%S")
+                        elif "end_time" in param.tag:
+                            end = datetime.datetime.strptime(
+                                param.text,
+                                "%Y-%m-%dT%H:%M:%S")
+                        elif "proton_charge" in param.tag:
+                            proton_charge = float(param.text)
+                    results.append((num, sample, start, end, proton_charge))
+                child.clear()
+                if num > max(runs):
+                    break
+    trans = [run for run in results
+             if trans_run(run[1])]
+    csans = [run for run in results
+             if can_sans(run[1])]
+    ctrans = [run for run in results
+              if can_trans(run[1])]
+    dtrans = [run for run in results
+              if direct_trans(run[1])]
+    temp = [convert_run([num, sample, start, end-start, charge],
+                        trans, csans, ctrans, dtrans, hetemp)
+            for (num, sample, start, time, charge) in results
+            if numbered_run(sample) and charge > 8]
