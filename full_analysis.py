@@ -1,4 +1,3 @@
-import datetime
 from os.path import join, expanduser, exists
 import sans.command_interface.ISISCommandInterface as ici
 from mantid.api import mtd
@@ -38,21 +37,12 @@ MASK_PATH = r'\\isis\inst$\NDXLARMOR\User\Users\Edler\May_2017\Mask_Tube{}.xml'
 
 MASKS = [MASK_PATH.format(t) for t in TUBES]
 
-def analyse(data_table):
-    runs = [
-        RunData(x["Run Number"], x["Sample"], x["Scale"], x["He3 Start"],
-                x["He3 End"], x["Trans run"], x["Can Sans run"],
-                x["Can Trans run"], x["Direct Trans run"],
-                datetime.datetime.strptime(x["Start time"],
-                                           "%Y-%m-%dT%H:%M:%S"))
-        for x in mtd[data_table]]
-
-
+def analyse(data_table, blank_table, show_fits=False, show_quality=False):
     if "Full Blank" not in mtd.getObjectNames():
-        int3samples(d["Full Blank"], "Full Blank", MASKS)
+        int3samples(blank_table, "Full Blank", MASKS)
     const = sel_const([mtd["Full Blank_{}".format(t)]
                     for t, _ in enumerate(MASKS)],
-                    show_fits=True, show_quality=True)
+                      show_fits=show_fits, show_quality=show_quality)
 
     k = data_table[:-5]
     for idx, run in enumerate(runs):

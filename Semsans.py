@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # %matplotlib qt
 # import matplotlib.pyplot as plt
+import datetime
 import numpy as np
 import pymantidplot.pyplot as plt
 import os.path
@@ -89,7 +90,7 @@ def he3pol(scale, time):
     return pol
 
 
-def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
+def int3samples(data_table, name, masks, binning='0.5, 0.05, 8.0'):
     """
     Finds the polarisation versus wavelength for a set of detector tubes.
 
@@ -117,6 +118,14 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     binning: string
       The binning values to use for the wavelength bins.  The default value is '0.5, 0.025, 10.0'
     """
+    runs = [
+        RunData(x["Run Number"], x["Sample"], x["Scale"], x["He3 Start"],
+                x["He3 End"], x["Trans run"], x["Can Sans run"],
+                x["Can Trans run"], x["Direct Trans run"],
+                datetime.datetime.strptime(x["Start time"],
+                                           "%Y-%m-%dT%H:%M:%S"))
+        for x in mtd[data_table]]
+
     started = 0
     for tube, _ in enumerate(masks):
         for i in [1, 2]:
