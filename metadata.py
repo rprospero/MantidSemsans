@@ -2,6 +2,7 @@
 import re
 import datetime
 import json
+import os.path
 from .runtypes import HeData, RunData
 
 def numbered_run(x):
@@ -41,8 +42,7 @@ def load_helium_file(f):
                 for line in infile]
 
 
-def convert_run(i, trans, csans, ctrans, dtrans):
-    hetemp = load_helium_file("heruns.tsv")
+def convert_run(i, trans, csans, ctrans, dtrans, hetemp):
     number = int(i[0])
     if re.match(r'(.+) run: (\d+)_SANS', i[1]):
         sample = re.match(r'(.+) run: (\d+)_SANS', i[1]).group(1)
@@ -84,6 +84,10 @@ def convert_run(i, trans, csans, ctrans, dtrans):
 def load_runs(infile, outfile):
     with open(infile, "r") as file_handle:
         lines = file_handle.readlines()
+    hetemp = load_helium_file(
+        os.path.join(
+            os.path.dirname(infile),
+            "heruns.tsv"))
     trans = [line for line in lines
              if trans_run(line.split("\t")[1])]
     csans = [line for line in lines
@@ -94,7 +98,7 @@ def load_runs(infile, outfile):
               if direct_trans(line.split("\t")[1])]
     with open(infile, "r") as lines:
         temp = [convert_run(line.split("\t"), trans,
-                            csans, ctrans, dtrans)
+                            csans, ctrans, dtrans, hetemp)
                 for line in lines
                 if numbered_run(line.split("\t")[1]) and
                 float(line.split("\t")[4]) >= 8]
@@ -106,7 +110,7 @@ def load_runs(infile, outfile):
         else:
             d[run.sample] = [run]
 
-    with open(outfile, "w") as outfile:
+    with open(os.path.join(os.path.dirname(infile), outfile), "w") as outfile:
         # outfile.write(repr(d))
         json.dump(d, outfile)
 
