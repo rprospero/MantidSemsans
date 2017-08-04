@@ -13,6 +13,7 @@ from mantid.simpleapi import (mtd, ConjoinWorkspaces, Load, ConvertUnits,
                               SumSpectra, MaskDetectors, GroupWorkspaces,
                               CreateWorkspace, DeleteWorkspaces, WeightedMean,
                               Mean, Fit, SmoothData)
+from .runtypes import table_to_run
 
 
 BASE = r"LARMOR{:08d}.nxs"
@@ -118,13 +119,7 @@ def int3samples(data_table, name, masks, binning='0.5, 0.05, 8.0'):
     binning: string
       The binning values to use for the wavelength bins.  The default value is '0.5, 0.025, 10.0'
     """
-    runs = [
-        RunData(x["Run Number"], x["Sample"], x["Scale"], x["He3 Start"],
-                x["He3 End"], x["Trans run"], x["Can Sans run"],
-                x["Can Trans run"], x["Direct Trans run"],
-                datetime.datetime.strptime(x["Start time"],
-                                           "%Y-%m-%dT%H:%M:%S"))
-        for x in mtd[data_table]]
+    runs = table_to_run(mtd[data_table])
 
     started = 0
     for tube, _ in enumerate(masks):

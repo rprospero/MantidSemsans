@@ -6,6 +6,7 @@ import json
 from collections import namedtuple
 from .Semsans import sumToShim, sel_const, int3samples, norm, sel, sel_const
 from .runtypes import HeData, RunData
+from .runtypes import table_to_run
 
 def get_shimed(run, path, reload=False):
     f =  join(path, "LARMOR{:08d}-add.nxs".format(run))
@@ -45,9 +46,11 @@ def analyse(data_table, blank_table, show_fits=False, show_quality=False):
                       show_fits=show_fits, show_quality=show_quality)
 
     k = data_table[:-5]
+    # int3samples(data_table, k, MASKS)
+    runs = table_to_run(mtd[data_table])
     for idx, run in enumerate(runs):
         # Mantid handles sans pretty well on its own, so we'll skip it for right now
-        # get_sans(run.number, run.trans, run.csans, run.ctrans, run.direct, MASK, SAVE_PATH)
+        get_sans(run.number, run.trans, run.csans, run.ctrans, run.direct, MASK, SAVE_PATH)
         # sans_ws = "{}rear_1D_0.9_10.0".format(run.number)
         # SaveAscii(sans_ws, join(SAVE_PATH,"{}_run{:02d}_sans.dat".format(k,idx)))
         # DeleteWorkspaces([sans_ws, sans_ws+"_lab_can", sans_ws+"_lab_can_count"
