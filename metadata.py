@@ -223,7 +223,7 @@ def get_log(runs):
             if (re.match(RUN_IDENTIFIERS["run"], run.sample) or
                 re.match(RUN_IDENTIFIERS["can_sans"], run.sample) or
                 re.match(RUN_IDENTIFIERS["direct_sans"], run.sample))
-            and run.charge > 8]
+            and run.charge/run.duration.seconds > 0.005]
 
     d = {}
     for run in temp:
