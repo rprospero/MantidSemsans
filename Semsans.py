@@ -13,10 +13,11 @@ from mantid.simpleapi import (mtd, ConjoinWorkspaces, Load, ConvertUnits,
                               SumSpectra, MaskDetectors, GroupWorkspaces,
                               CreateWorkspace, DeleteWorkspaces, WeightedMean,
                               Mean, Fit, SmoothData)
-from .runtypes import table_to_run
+from .runtypes import table_to_run, HeData
 
 
 BASE = r"LARMOR{:08d}.nxs"
+# BASE = "{}"
 
 RANGE = "1.8,0.1,8"
 
@@ -91,6 +92,21 @@ def he3pol(scale, time):
     return pol
 
 
+def he3_stats(run):
+    timecode = run.start.isoformat()
+    stats = [x for x in mtd["helium_log"]
+             if timecode > x["Start time"]][-1]
+    print("Sample: {}\tHe time: {}\tsample time: {}".format(run.sample,
+                                                            stats["Start time"],
+                                                            run.start))
+    print(stats)
+    print(timecode)
+    return HeData(stats["Number"], stats["Cell"], stats["scale"],
+                  datetime.datetime.strptime(stats["Start time"],
+                                             "%Y-%m-%dT%H:%M:%S"),
+                  stats["fid"], stats["Time Constant"])
+
+
 def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     """
     Finds the polarisation versus wavelength for a set of detector tubes.
@@ -150,9 +166,13 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     x = mtd["{}_0_1".format(name)].extractX()[0]
     dx = (x[1:] + x[:-1]) / 2
     pols = []
+
     for run in runs:
-        for time in np.linspace(run.start, run.end, 10):
-            temp = he3pol(run.scale, run.start)(dx)
+        he_stat = he3_stats(run)
+        start = (run.start-he_stat.dt).seconds/3600/he_stat.t1
+        end = (run.end-he_stat.dt).seconds/3600/he_stat.t1
+        for time in np.linspace(start, end, 10):
+            temp = he3pol(he_stat.scale, time)(dx)
             pols.append(temp)
     wpol = CreateWorkspace(x, np.mean(pols, axis=0),
                            # and the blank
@@ -168,6 +188,8 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
                           for i in range(1, 3)])
         RenameWorkspace("pol2",
                         OutputWorkspace="{}_{}".format(name, tube))
+        RenameWorkspace(wpol,
+                        OutputWorkspace="{}_{}_comp".format(name, tube))
 
     GroupWorkspaces(["{}_{}".format(name, tube)
                      for tube, _ in enumerate(masks)
