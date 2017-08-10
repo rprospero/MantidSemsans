@@ -2,9 +2,8 @@
 # %matplotlib qt
 # import matplotlib.pyplot as plt
 import datetime
-import numpy as np
-import pymantidplot.pyplot as plt
 import os.path
+import numpy as np
 from scipy.optimize import curve_fit
 from mantid.simpleapi import (mtd, ConjoinWorkspaces, Load, ConvertUnits,
                               ExtractSingleSpectrum, SaveNexusProcessed,
@@ -12,15 +11,14 @@ from mantid.simpleapi import (mtd, ConjoinWorkspaces, Load, ConvertUnits,
                               RenameWorkspace, Rebin, LoadMask, CloneWorkspace,
                               SumSpectra, MaskDetectors, GroupWorkspaces,
                               CreateWorkspace, DeleteWorkspaces, WeightedMean,
-                              Mean, Fit, SmoothData)
-from .runtypes import table_to_run, HeData
+                              Fit)
+from .runtypes import HeData
 
 
 BASE = r"LARMOR{:08d}.nxs"
 # BASE = "{}"
 
 RANGE = "1.8,0.1,8"
-
 
 def sumToShim(rnum, output_dir=None):
     """
@@ -93,14 +91,24 @@ def he3pol(scale, time):
 
 
 def he3_stats(run):
+    """
+    Return the information about the ³He analyser's state during this
+    run.  This function requires that get_he3_log has already been
+    run, creating the "helium_log" table.
+
+    Parameters
+    ----------
+    run
+      A RunData object containing the run whose analyser statistics are needed
+
+    Return
+    ------
+    A HeData object describing the state of the analyser during the run.
+
+    """
     timecode = run.start.isoformat()
     stats = [x for x in mtd["helium_log"]
              if timecode > x["Start time"]][-1]
-    print("Sample: {}\tHe time: {}\tsample time: {}".format(run.sample,
-                                                            stats["Start time"],
-                                                            run.start))
-    print(stats)
-    print(timecode)
     return HeData(stats["Number"], stats["Cell"], stats["scale"],
                   datetime.datetime.strptime(stats["Start time"],
                                              "%Y-%m-%dT%H:%M:%S"),
@@ -113,27 +121,19 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
 
     Parameters
     ----------
-    runs: list of dicts
-      This should contain a list of dictionaries, with each dict holding the proper run information.
-      This dictionary should be automatically created from the run information and you should not
-      be needing to generate it by hand. The dictionary should have the following entries:
-      - number
-        An int containing the run number
-      - decay_start_time
-        The number of polarisation decay time periods between the ³He being polarised and the
-         start of the measurement
-      - decay_end_time
-        The number of polarisation decay time periods between the ³He being polarised and the
-         end of the measurement
-      - scale
-        A float such that tanh(scale*λ) is the polarisation versus lambda when the ³He cell was
-         polarised.
+    runs: list of RunData objects
+      The runs whose polarisation we are interested in.
+
     name: string
       The name of this set of runs
+
     masks: list of string
-      The file names of the masks for the sequential tubes that are being used for the SEMSANS measurements.
+      The file names of the masks for the sequential tubes that are being used
+      for the SEMSANS measurements.
+
     binning: string
-      The binning values to use for the wavelength bins.  The default value is '0.5, 0.025, 10.0'
+      The binning values to use for the wavelength bins.  The default value is
+      '0.5, 0.025, 10.0'
     """
     started = 0
     for tube, _ in enumerate(masks):
@@ -150,8 +150,8 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
         w1 = Rebin(w1, binning, PreserveEvents=False)
         w1mon = Rebin(w1mon, binning)
         w1 = w1 / w1mon
-        for tube, m in enumerate(masks):
-            Mask_Tube = LoadMask('LARMOR', m)
+        for tube, mask in enumerate(masks):
+            Mask_Tube = LoadMask('LARMOR', mask)
             w1temp = CloneWorkspace(w1)
             MaskDetectors(w1temp, MaskedWorkspace="Mask_Tube")
             Tube_Sum = SumSpectra(w1temp)
@@ -182,14 +182,11 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     for tube, _ in enumerate(masks):
         up = mtd["{}_{}_2".format(name, tube)]
         dn = mtd["{}_{}_1".format(name, tube)]
-        pol = (up - dn) / (up + dn)
-        pol2 = pol / wpol
+        pol = (up - dn) / (up + dn) / wpol
         DeleteWorkspaces(["{}_{}_{}".format(name, tube, i)
                           for i in range(1, 3)])
-        RenameWorkspace("pol2",
+        RenameWorkspace("pol",
                         OutputWorkspace="{}_{}".format(name, tube))
-        RenameWorkspace(wpol,
-                        OutputWorkspace="{}_{}_comp".format(name, tube))
 
     GroupWorkspaces(["{}_{}".format(name, tube)
                      for tube, _ in enumerate(masks)
@@ -215,18 +212,18 @@ def norm(sample, blank, masks):
     for t, _ in enumerate(masks):
         wtemp = mtd[sample + "_{}".format(t)] / \
             mtd[blank + "_{}".format(t)]
-        
+
         y = mtd[blank + "_{}".format(t)].extractY()
         e = wtemp.extractE()
 
-        e[np.abs(y) < 0.2] *= 1e9 
+        e[np.abs(y) < 0.2] *= 1e9
         wtemp.setE(0, e[0])
 
         RenameWorkspace("wtemp", sample + "_{}_norm".format(t))
     wtemp = WeightedMean(sample + "_0_norm",
                          sample + "_1_norm")
-    for t in range(2, len(masks)):
-        wtemp = WeightedMean(wtemp, sample + "_{}_norm".format(t))
+    for tube in range(2, len(masks)):
+        wtemp = WeightedMean(wtemp, sample + "_{}_norm".format(tube))
     RenameWorkspace(wtemp, OutputWorkspace=sample + "_Norm")
     DeleteWorkspaces(["{}_{}_norm".format(sample, tube)
                       for tube, _ in enumerate(masks)])
@@ -268,17 +265,14 @@ def sel_const(runs, dist=4.0, thickness=5e-3,
         conv = len(x) / (np.max(x) - np.min(x))
         max_arg = (np.nanargmax(np.abs(fp[1:int(len(p) / 2)])) + 1)
         amp = np.abs(fp[max_arg]) / len(x)
-        phi = np.angle(fp[max_arg]) / len(x)
         max_arg = max_arg * conv / len(x)
 
-        def model(x, f, ph, e):
-            return e * np.cos(x * f + ph)
-
-        Fit(Function="name=UserFunction,Formula=e*cos(x*f),f={},e={}".format(max_arg*2*np.pi,amp),
+        model = "name=UserFunction,Formula=e*cos(x*f),f={},e={}"
+        Fit(Function=model.format(max_arg*2*np.pi, amp),
             InputWorkspace=run, StartX=3, EndX=7, CreateOutput=True)
 
         result = mtd[run.getName()+"_Parameters"]
-        
+
         freqs.append(np.abs(result.column(1)[1]/2/np.pi))
         if not show_fits:
             DeleteWorkspace(run.getName()+"_Parameters")
@@ -286,6 +280,7 @@ def sel_const(runs, dist=4.0, thickness=5e-3,
             DeleteWorkspace(run.getName()+"_Workspace")
 
     def model(x, m, b):
+        """A simple linear model"""
         return m * x + b
     xs = np.arange(len(runs))*thickness
     fit, _ = curve_fit(model, xs, freqs)
@@ -298,7 +293,7 @@ def sel_const(runs, dist=4.0, thickness=5e-3,
         DeleteWorkspace("sel_fits_Parameters")
         DeleteWorkspace("sel_fits_NormalisedCovarianceMatrix")
         DeleteWorkspace("sel_fits_Workspace")
-    
+
     return result
 
 

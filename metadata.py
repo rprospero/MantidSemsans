@@ -1,8 +1,8 @@
-#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import re
 import datetime
 import xml.etree
-from mantid.simpleapi import CreateEmptyTableWorkspace, RenameWorkspace, mtd
+from mantid.simpleapi import CreateEmptyTableWorkspace, RenameWorkspace
 from .runtypes import HeData, RunData, QuickData
 
 RUN_IDENTIFIERS = {
@@ -15,6 +15,19 @@ RUN_IDENTIFIERS = {
 
 
 def convert_he(i):
+    """
+    Convert a line from the ³He log into an HeData object
+
+    Parameters
+    ----------
+    i
+      A list of strings, representing each cell in the row of the
+      ³He log file
+
+    Returns
+    -------
+    A HeData object containing the information from this row of the log
+    """
     run = int(i[0])
     cell = i[1]
     pl = float(i[2])
@@ -26,36 +39,83 @@ def convert_he(i):
     return HeData(run, cell, 0.0733 * pl * phe, dt, fid, t1)
 
 
-def load_helium_file(f):
-    with open(f, "r") as infile:
+def load_helium_file(helium_file):
+    """
+
+    Turn the ³He log file into a list of HeData
+
+    Parameters
+    ----------
+    helium_file
+      The path to the ³He log file
+
+    Returns
+    -------
+    A list of HeData
+    """
+    with open(helium_file, "r") as infile:
         infile.readline()  # read header
         return [convert_he(line.split("\t"))
                 for line in infile]
 
 
 def convert_run(run, trans, csans, ctrans, dtrans):
-    if re.match(r'(.+) run: (\d+)_SANS', run.sample):
-        sample = re.match(r'(.+) run: (\d+)_SANS', run.sample).group(1)
+    """
+    Fully populate the data for a run.
+
+    Parameters
+    ----------
+    run
+      A QuickData object about the run to be converted
+    trans
+      A list QuickData objects for the sample transmission runs
+    csans
+      A list of QuickData objects for the can sans runs
+    ctrans
+      A list of QuickData objects for the can transmission runs
+    dtrans
+      A list of QuickData objects for the direct beam measurements
+
+    Returns
+    -------
+    A fully populated RunData object for the requested run.
+    """
+    if re.match(RUN_IDENTIFIERS["run"], run.sample):
+        sample = re.match(RUN_IDENTIFIERS["run"], run.sample).group(1)
     else:
         sample = "Full Blank"
-    duration = run[3]
 
     tr = -1
     for tran in trans:
-        if sample in tran[1]:
-            tr = tran[0]
-    csans.sort(key=lambda x: x[2]-run.start)
-    ctrans.sort(key=lambda x: x[2]-run.start)
-    dtrans.sort(key=lambda x: x[2]-run.start)
+        if sample in tran.sample:
+            tr = tran.number
+    csans.sort(key=lambda x: x.start-run.start)
+    ctrans.sort(key=lambda x: x.start-run.start)
+    dtrans.sort(key=lambda x: x.start-run.start)
     return RunData(run.number, sample, run.start, run.end, tr,
-                   int(csans[0][0]), int(ctrans[0][0]),
-                   int(dtrans[0][0]))
+                   int(csans[0].number), int(ctrans[0].number),
+                   int(dtrans[0].number))
 
 
 JPATH = r'\\isis\inst$\NDXLARMOR\Instrument\logs\journal'
 
 
 def get_relevant_log(run):
+    """
+
+    Find the correct journal log for the run in question.  This allows
+    our code to work over multiple run cycles.
+
+    Parameters
+    ----------
+    run
+      The run number being analysed
+
+    Returns
+    -------
+    A string containing the path to the journal file containing that run.
+
+    """
     with open(JPATH+r"\journal_main.xml", "r") as infile:
         journals = xml.etree.ElementTree.parse(infile)
     for child in journals.getroot():
@@ -65,12 +125,33 @@ def get_relevant_log(run):
 
 
 def get_xml_run_number(node):
+    """
+
+    Find the run number of an xml node
+
+    Parameters
+    ----------
+    node
+      The xml node for the run
+
+    Returns
+    -------
+    The run number
+    """
     for child in node:
         if "run_number" in child.tag:
             return int(child.text)
 
 
 def get_he3_log(path):
+    """
+    Load the ³He log data into Mantid Table named "helium_log"
+
+    Parameters
+    ----------
+    path
+      A string with the path to the ³He as a tsv file
+    """
     hetemp = load_helium_file(path)
     my_table = CreateEmptyTableWorkspace()
     my_table.addColumn("int", "Number")
@@ -89,6 +170,16 @@ def get_he3_log(path):
 
 
 def get_log(runs):
+    """
+    Uses the run journal to identify which run numbers are associated with
+    which samples and create a table for each sample, containing all the
+    information needed to analyse each run.
+
+    Parameters
+    ----------
+    runs
+      A list of integer run numbers
+    """
     log_file = JPATH + "\\" + get_relevant_log(min(runs))
     results = []
     with open(log_file, "r") as infile:
@@ -114,7 +205,8 @@ def get_log(runs):
                         elif "proton_charge" in param.tag:
                             proton_charge = float(param.text)
                     results.append(
-                        QuickData(num, sample, start, stop, duration, proton_charge))
+                        QuickData(num, sample, start, stop, duration,
+                                  proton_charge))
                 child.clear()
                 if num > max(runs):
                     break
