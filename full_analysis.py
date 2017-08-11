@@ -6,7 +6,7 @@ analyse.
 
 """
 
-from os.path import join, exists
+from os.path import join, exists, dirname
 import sans.command_interface.ISISCommandInterface as ici
 from mantid.api import mtd
 from mantid.simpleapi import DeleteWorkspaces
@@ -78,6 +78,7 @@ def analyse(data_table, masks, output_file,
     k = data_table[:-5]
     runs = table_to_run(mtd[data_table])
     for idx, run in enumerate(runs):
+        get_shimed(run.number, dirname(output_file))
         int3samples([run], "{}_run{:02d}".format(k, idx), masks)
         # DeleteWorkspace("{}_sans_nxs".format(run.number))
         semsans_ws = "{}_run{:02d}".format(k, idx)
@@ -92,9 +93,9 @@ def analyse(data_table, masks, output_file,
                     "can_sans,{}-add,"\
                     "can_trans,{}-add,"\
                     "can_direct_beam,{}-add,"\
-                    "output_as,test_{}\n"
+                    "output_as,hours_{:0.2f}\n"
         for idx, run in enumerate(runs):
             outfile.write(
                 framework.format(run.number, run.trans, run.direct,
                                  run.csans, run.ctrans, run.direct,
-                                 idx))
+                                 (run.start-runs[0].start).seconds/3600.0))
