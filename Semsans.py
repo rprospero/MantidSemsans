@@ -180,11 +180,13 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     for tube, _ in enumerate(masks):
         up = mtd["{}_{}_2".format(name, tube)]
         dn = mtd["{}_{}_1".format(name, tube)]
-        pol = (up - dn) / (up + dn) / wpol
+        pol = (up - dn) / (up + dn)
+        pol /= wpol
         DeleteWorkspaces(["{}_{}_{}".format(name, tube, i)
                           for i in range(1, 3)])
         RenameWorkspace("pol",
                         OutputWorkspace="{}_{}".format(name, tube))
+    DeleteWorkspaces(["Tube_Sum_1", "Tube_Sum_2"])
 
     GroupWorkspaces(["{}_{}".format(name, tube)
                      for tube, _ in enumerate(masks)
@@ -291,6 +293,7 @@ def sel_const(runs, dist=4.0, thickness=5e-3,
         DeleteWorkspace("sel_fits_Parameters")
         DeleteWorkspace("sel_fits_NormalisedCovarianceMatrix")
         DeleteWorkspace("sel_fits_Workspace")
+        DeleteWorkspace("sel_fits")
 
     return result
 
