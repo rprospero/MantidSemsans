@@ -135,7 +135,6 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
       The binning values to use for the wavelength bins.  The default value is
       '0.5, 0.025, 10.0'
     """
-    started = 0
     for tube, _ in enumerate(masks):
         for i in [1, 2]:
             final_state = "{}_{}_{}".format(name, tube, i)
@@ -157,11 +156,10 @@ def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
             Tube_Sum = SumSpectra(w1temp)
             for i in [1, 2]:
                 final_state = "{}_{}_{}".format(name, tube, i)
-                if started == 6:
+                if final_state in mtd.getObjectNames():
                     mtd[final_state] += mtd["Tube_Sum_{}".format(i)]
                 else:
                     mtd[final_state] = mtd["Tube_Sum_{}".format(i)]
-                    started += 1
 
     x = mtd["{}_0_1".format(name)].extractX()[0]
     dx = (x[1:] + x[:-1]) / 2
