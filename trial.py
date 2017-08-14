@@ -10,7 +10,7 @@ from Semsans.full_analysis import analyse
 ###############################################
 
 # Fold where we will save the Sans batch script
-save_path = "C:/Users/auv61894/Dropbox/Science/Edler/Edler_May_2017/"
+save_path = "C:/Users/auv61894/Documents/Science/Edler_May_2017/"
 
 # The location of the 3He log file
 he_log = r"C:\Users\auv61894\Dropbox\Science\Edler\Edler_May_2017\heruns.tsv"
@@ -54,8 +54,8 @@ get_log(range(20401, 20536))
 # This will also produce two csv files that can be
 # imported into the ISIS SANS gui to retrieve
 # the Sans data.
-analyse("OEGC 25C R_10.81_runs", masks,
-        save_path+"oegc_10.81_runs.csv")
+# analyse("OEGC 25C R_10.81_runs", masks,
+#         save_path+"oegc_10.81_runs.csv")
 analyse("CTAB 25 R_7.21_runs", masks,
         save_path+"ctab_7.21_runs.csv")
 
@@ -68,5 +68,5 @@ RUN_IDENTIFIERS["run"] = r"(Supermirror).+_SANS"
 get_log(range(20401, 20536))
 
 # Analyse the supermirror runs
-analyse("Supermirror_runs", masks,
-        save_path+"mirror_runs.csv")
+# analyse("Supermirror_runs", masks,
+#         save_path+"mirror_runs.csv")
