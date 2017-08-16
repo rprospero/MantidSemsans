@@ -6,12 +6,12 @@ from mantid.simpleapi import CreateEmptyTableWorkspace, RenameWorkspace
 from .runtypes import HeData, RunData, QuickData
 
 RUN_IDENTIFIERS = {
-    "run": r'(.+) run: (\d+)_SANS',
+    "run": r'(.+)_run:_(\d+)_SANS',
     "trans": r".+_TRANS",
-    "can_sans": r"D2. 2mm_SANS",
-    "can_trans": r"D2. 2mm_TRANS",
-    "direct_sans": "MT Beam_SANS",
-    "direct_trans": "MT Beam_TRANS"}
+    "can_sans": r"D2._2mm_SANS",
+    "can_trans": r"D2._2mm_TRANS",
+    "direct_sans": "MT_Beam_SANS",
+    "direct_trans": "MT_Beam_TRANS"}
 
 
 def convert_he(i):
@@ -83,7 +83,7 @@ def convert_run(run, trans, csans, ctrans, dtrans):
     if re.match(RUN_IDENTIFIERS["run"], run.sample):
         sample = re.match(RUN_IDENTIFIERS["run"], run.sample).group(1)
     else:
-        sample = "Full Blank"
+        sample = "Full_Blank"
 
     tr = -1
     for tran in trans:
@@ -190,7 +190,7 @@ def get_log(runs):
                 if num in runs:
                     for param in child:
                         if "title" in param.tag:
-                            sample = param.text
+                            sample = param.text.replace(" ", "_")
                         elif "start_time" in param.tag:
                             start = datetime.datetime.strptime(
                                 param.text,

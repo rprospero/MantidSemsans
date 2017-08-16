@@ -69,20 +69,20 @@ def analyse(data_table, masks, output_file,
       frequencies used to calculate the spin echo length.  Defaults to False
 
     """
-    if "Full Blank" not in mtd.getObjectNames():
-        int3samples(table_to_run(mtd["Full Blank_runs"]), "Full Blank", masks)
-    const = sel_const([mtd["Full Blank_{}".format(tube)]
+    if "Full_Blank" not in mtd.getObjectNames():
+        int3samples(table_to_run(mtd["metadata_Full_Blank_runs"]), "Full_Blank", masks)
+    const = sel_const([mtd["Full_Blank_{}".format(tube)]
                        for tube, _ in enumerate(masks)],
                       show_fits=show_fits, show_quality=show_quality)
 
-    k = data_table[:-5]
+    k = data_table[9:-5]
     runs = table_to_run(mtd[data_table])
-    for idx, run in enumerate(runs):
+    for run in runs:
         get_shimed(run.number, dirname(output_file))
-        int3samples([run], "{}_run{:02d}".format(k, idx), masks)
+        semsans_ws = "{}_hours_{:0.02f}".format(k, (run.start-runs[0].start).seconds/3600.0)
+        int3samples([run], semsans_ws, masks)
         # DeleteWorkspace("{}_sans_nxs".format(run.number))
-        semsans_ws = "{}_run{:02d}".format(k, idx)
-        norm(semsans_ws, "Full Blank", masks)
+        norm(semsans_ws, "Full_Blank", masks)
         sel(semsans_ws+"_norm", const)
         DeleteWorkspaces([semsans_ws,
                           semsans_ws+"_Norm"])
@@ -93,9 +93,9 @@ def analyse(data_table, masks, output_file,
                     "can_sans,{}-add,"\
                     "can_trans,{}-add,"\
                     "can_direct_beam,{}-add,"\
-                    "output_as,hours_{:0.2f}\n"
+                    "output_as,{}_hours_{:0.2f}\n"
         for idx, run in enumerate(runs):
             outfile.write(
                 framework.format(run.number, run.trans, run.direct,
-                                 run.csans, run.ctrans, run.direct,
+                                 run.csans, run.ctrans, run.direct, k,
                                  (run.start-runs[0].start).seconds/3600.0))

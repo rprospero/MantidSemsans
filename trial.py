@@ -43,7 +43,7 @@ get_he3_log(he_log)
 # with a regex. The value in the parens
 # will be used to get the name of the
 # actual sample.
-RUN_IDENTIFIERS["run"] = r'(.+) run: \d+_SANS'
+RUN_IDENTIFIERS["run"] = r'(.+)_run:_\d+_SANS'
 
 # Load the information about the runs of interest
 # from the Larmor log.  This particular measurement
@@ -56,7 +56,7 @@ get_log(range(20401, 20536))
 # the Sans data.
 # analyse("OEGC 25C R_10.81_runs", masks,
 #         save_path+"oegc_10.81_runs.csv")
-analyse("CTAB 25 R_7.21_runs", masks,
+analyse("metadata_CTAB_25_R_7.21_runs", masks,
         save_path+"ctab_7.21_runs.csv")
 
 # Load supermirror runs instead
