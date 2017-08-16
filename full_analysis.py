@@ -99,3 +99,9 @@ def analyse(data_table, masks, output_file,
                 framework.format(run.number, run.trans, run.direct,
                                  run.csans, run.ctrans, run.direct, k,
                                  (run.start-runs[0].start).seconds/3600.0))
+
+    import sans.command_interface.ISISCommandInterface as ici
+    ici.Clean()
+    ici.LARMOR()
+    ici.MaskFile(r"\\isis\inst$\NDXLARMOR\User\Users\Masks\USER_Edler_171B_a2_8mm_SEMSANS_r20287.txt")
+    ici.BatchReduce(output_file, format=".nxs", verbose=True)
