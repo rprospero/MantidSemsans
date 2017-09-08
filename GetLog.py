@@ -31,9 +31,12 @@ class GetLog(PythonAlgorithm):
                              doc="Ending run number")
         self.declareProperty("direct_trans", defaultValue="MT_Beam_TRANS",
                              doc="Ending run number")
-        self.declareProperty(WorkspaceProperty(name="OutputWorkspace",
+        self.declareProperty(WorkspaceProperty(name="LogTable",
                                                direction=Direction.Output,
-                                               defaultValue=""))
+                                               defaultValue="LogTable"))
+        self.declareProperty(WorkspaceProperty(name="SamplesTable",
+                                               direction=Direction.Output,
+                                               defaultValue="SampleTable"))
 
 
     def PyExec(self):
@@ -117,8 +120,13 @@ class GetLog(PythonAlgorithm):
                      run.end.isoformat(),
                      run.trans, run.csans, run.ctrans,
                      run.direct])
-                self.setProperty("OutputWorkspace", my_table)
-                # RenameWorkspace(my_table, "metadata_"+k+"_runs")
+        self.setProperty("LogTable", my_table)
+
+        my_table = WorkspaceFactory.createTable()
+        my_table.addColumn("str", "Name")
+        for k, _ in d.items():
+            my_table.addRow([k])
+        self.setProperty("SamplesTable", my_table)
 
     def _get_relevant_log(self, run):
         """
