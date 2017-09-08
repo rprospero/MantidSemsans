@@ -10,14 +10,13 @@ class HeliumLog(PythonAlgorithm):
     def PyInit(self):
         self.declareProperty(FileProperty(name="LogFile", defaultValue="",
                                           action=FileAction.Load,
-                                          extensions=["csv"]))
+                                          extensions=["tsv"]))
         self.declareProperty(
             ITableWorkspaceProperty(name="OutputWorkspace",
                                     defaultValue="",
                                     direction=Direction.Output))
 
-    def _load_helium_file(self):
-        helium_file = self.getParameter(self.getParameter("LogFile").value)
+    def _load_helium_file(self, helium_file):
         with open(helium_file, "r") as infile:
             infile.readline()  # read header
             return [self._convert_he(line.split("\t"))
@@ -52,7 +51,7 @@ class HeliumLog(PythonAlgorithm):
     def PyExec(self):
         path = self.getProperty("LogFile").value
         hetemp = self._load_helium_file(path)
-        my_table = WorkspaceFactory.create("TableWorkspace")
+        my_table = WorkspaceFactory.createTable()
         my_table.addColumn("int", "Number")
         my_table.addColumn("str", "Cell")
         my_table.addColumn("float", "scale")
