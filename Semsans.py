@@ -52,68 +52,6 @@ def sumToShim(rnum, output_dir=None):
                     'LARMOR{:08d}-add'.format(rnum))
 
 
-def he3pol(scale, time):
-    """
-    Create a ³He polarisation compensator
-
-    The polarisation is given by
-
-    P = tanh(scale × exp(-time) × λ)
-
-    Parameters
-    ----------
-    scale : float
-      The initial constant for the he3 polarisation at time=0
-    time : float
-      The amount of time that has passed since polarisation
-      in units of the cell's time constants
-
-    Returns
-    -------
-    A function which takes a wavelength and gives a
-    ³He polarising efficiency.
-    """
-    def pol(wavelength):
-        """
-        Calculate the polarisation efficiency as a given wavelength
-
-        Parameters
-        ----------
-        wavelength
-          The wavelength of the neutron in Å
-
-        Return
-        ------
-        The polarising efficiency of the ³He analyser
-        """
-        return np.tanh(scale * np.exp(-time) * wavelength)
-    return pol
-
-
-def he3_stats(run):
-    """
-    Return the information about the ³He analyser's state during this
-    run.  This function requires that get_he3_log has already been
-    run, creating the "helium_log" table.
-
-    Parameters
-    ----------
-    run
-      A RunData object containing the run whose analyser statistics are needed
-
-    Return
-    ------
-    A HeData object describing the state of the analyser during the run.
-
-    """
-    timecode = run.start.isoformat()
-    stats = [x for x in mtd["helium_log"]
-             if timecode > x["Start time"]][-1]
-    return HeData(stats["Number"], stats["Cell"], stats["scale"],
-                  datetime.datetime.strptime(stats["Start time"],
-                                             "%Y-%m-%dT%H:%M:%S"),
-                  stats["fid"], stats["Time Constant"])
-
 
 def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     """
