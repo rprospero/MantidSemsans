@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from mantid.kernel import *
 from mantid.api import *
-from .runtypes import HeData
+from runtypes import HeData
 
 class HeliumLog(PythonAlgorithm):
     def category(self):
@@ -10,9 +11,10 @@ class HeliumLog(PythonAlgorithm):
         self.declareProperty(FileProperty(name="LogFile", defaultValue="",
                                           action=FileAction.Load,
                                           extensions=["csv"]))
-        self.declareProperty(ITableWorkspaceProperty(name="OutputWorkspace",
-                                                     defaultValue="",
-                                                     direction="Direction.Output"))
+        self.declareProperty(
+            ITableWorkspaceProperty(name="OutputWorkspace",
+                                    defaultValue="",
+                                    direction=Direction.Output))
 
     def _load_helium_file(self):
         helium_file = self.getParameter(self.getParameter("LogFile").value)
