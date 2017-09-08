@@ -15,11 +15,6 @@ from mantid.simpleapi import (mtd, ConjoinWorkspaces, Load, ConvertUnits,
 from .runtypes import HeData
 
 
-BASE = r"LARMOR{:08d}.nxs"
-# BASE = "{}"
-
-RANGE = "1.8,0.1,8"
-
 def sumToShim(rnum, output_dir=None):
     """
     Combine both spin states into a single workspace
