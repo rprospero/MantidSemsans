@@ -79,6 +79,10 @@ def analyse(data_table, masks, output_file,
     runs = table_to_run(mtd[data_table])
     for run in runs:
         get_shimed(run.number, dirname(output_file))
+        get_shimed(run.trans, dirname(output_file))
+        get_shimed(run.csans, dirname(output_file))
+        get_shimed(run.ctrans, dirname(output_file))
+        get_shimed(run.direct, dirname(output_file))
         semsans_ws = "{}_hours_{:0.02f}".format(k, (run.start-runs[0].start).seconds/3600.0)
         int3samples([run], semsans_ws, masks)
         # DeleteWorkspace("{}_sans_nxs".format(run.number))

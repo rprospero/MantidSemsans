@@ -250,4 +250,4 @@ def get_log(runs):
                  run.end.isoformat(),
                  run.trans, run.csans, run.ctrans,
                  run.direct])
-        RenameWorkspace(my_table, k+"_runs")
+        RenameWorkspace(my_table, "metadata_"+k+"_runs")
