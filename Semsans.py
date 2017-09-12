@@ -15,39 +15,6 @@ from mantid.simpleapi import (mtd, ConjoinWorkspaces, Load, ConvertUnits,
 from .runtypes import HeData
 
 
-def sumToShim(rnum, output_dir=None):
-    """
-    Combine both spin states into a single workspace
-
-    Parameters
-    ----------
-    rnum : int
-      The run number to be shimmed
-    output_dir : string
-      If given, the folder where the workspace should be saved
-
-    """
-    try:
-        wtemp = Load(BASE.format(rnum), LoadMonitors=True)
-        RebinToWorkspace('wtemp_1', 'wtemp_monitors_1', PreserveEvents=False,
-                         OutputWorkspace='wtemp_1')
-        RebinToWorkspace('wtemp_2', 'wtemp_monitors_1', PreserveEvents=False,
-                         OutputWorkspace='wtemp_2')
-        wtemp_1 = ConjoinWorkspaces('wtemp_monitors_1', 'wtemp_1')
-        wtemp_2 = ConjoinWorkspaces('wtemp_monitors_2', 'wtemp_2')
-    except:
-        wtemp_monitors = Load(BASE.format(rnum))
-    wtempShim = mtd['wtemp_monitors_1'] + mtd['wtemp_monitors_2']
-    RenameWorkspace(wtempShim, 'LARMOR{:08d}'.format(rnum))
-    if output_dir:
-        SaveNexusProcessed('LARMOR{:08d}'.format(rnum),
-                           os.path.join(output_dir,
-                                        "LARMOR{:08d}-add.nxs".format(rnum)))
-    RenameWorkspace('LARMOR{:08d}'.format(rnum),
-                    'LARMOR{:08d}-add'.format(rnum))
-
-
-
 def int3samples(runs, name, masks, binning='0.5, 0.05, 8.0'):
     """
     Finds the polarisation versus wavelength for a set of detector tubes.

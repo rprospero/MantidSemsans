@@ -10,7 +10,7 @@ from os.path import join, exists, dirname
 import sans.command_interface.ISISCommandInterface as ici
 from mantid.api import mtd
 from mantid.simpleapi import DeleteWorkspaces
-from .Semsans import sumToShim, sel_const, int3samples, norm, sel
+from .Semsans import int3samples, norm, sel
 from .runtypes import table_to_run
 
 
@@ -38,7 +38,9 @@ def get_shimed(run, path, refresh=False):
     """
     f = join(path, "LARMOR{:08d}-add.nxs".format(run))
     if refresh or not exists(f):
-        sumToShim(run, path)
+        wksp = SumToShim(run)
+        SaveNexusProcessed(wksp, f)
+        DeleteWorkspace(wksp)
     return f
 
 
