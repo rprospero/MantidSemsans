@@ -229,34 +229,3 @@ def sel_const(runs, dist=4.0, thickness=5e-3,
         DeleteWorkspace("sel_fits")
 
     return result
-
-
-def sel(sample, const):
-    """
-    Convert workspace into normalised spin echo units
-
-    Parameters
-    ----------
-    sample : str
-      The name of the workspace to be converted
-    const : float
-      The spin echo length of a one angstrom neutron in nanometers
-
-    Returns
-    -------
-    The name of a workspace with the x coordinate in proper spin echo
-    units and the y coordinate in log(P/P₀)/λ²
-    """
-    wtemp = mtd[sample]
-    x = wtemp.extractX()
-    y = wtemp.extractY()
-    e = wtemp.extractE()
-
-    dx = (x[:, 1:] + x[:, :-1]) / 2
-
-    wtemp = ConvertUnits(sample, "SpinEchoLength", EFixed=const)
-
-    wenv = CreateWorkspace(wtemp.extractX(), np.log(y) / dx**2, e / y / dx**2,
-                           UnitX="SpinEchoLength",
-                           YUnitLabel="Counts")
-    RenameWorkspace(wenv, OutputWorkspace=sample + "_sel")

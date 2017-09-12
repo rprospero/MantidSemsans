@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from mantid.kernel import *
 from mantid.api import *
+from mantid.simpleapi import *
 
 
 class Polarisation(PythonAlgorithm):

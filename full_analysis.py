@@ -87,7 +87,8 @@ def analyse(data_table, masks, output_file,
         int3samples([run], semsans_ws, masks)
         # DeleteWorkspace("{}_sans_nxs".format(run.number))
         norm(semsans_ws, "Full_Blank", masks)
-        sel(semsans_ws+"_norm", const)
+        wtemp = Patterson(pol=semsans_ws+"_norm", const=const)
+        RenameWorkspace(wtemp, semsans_ws+"_sel")
         DeleteWorkspaces([semsans_ws,
                           semsans_ws+"_Norm"])
     with open(output_file, "w") as outfile:
