@@ -71,9 +71,8 @@ def analyse(data_table, masks, output_file,
     """
     if "Full_Blank" not in mtd.getObjectNames():
         int3samples(table_to_run(mtd["metadata_Full_Blank_runs"]), "Full_Blank", masks)
-    const = sel_const([mtd["Full_Blank_{}".format(tube)]
-                       for tube, _ in enumerate(masks)],
-                      show_fits=show_fits, show_quality=show_quality)
+    const = SelConst(mtd["Full_Blank_39"], mtd["Full_Blank_40"],
+                     mtd["Full_Blank_41"])
 
     k = data_table[9:-5]
     runs = table_to_run(mtd[data_table])
